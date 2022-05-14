@@ -14,6 +14,8 @@ Copyright 2022, Manfred Hantschel
 
 import { Context, createContext } from "react";
 import { Data } from "./Data";
+import { SourceOoeGv } from "./SourceOoeGv";
+import { SourceOoeGvMock } from "./SourceOoeGvMock";
 
 export interface State {
     data: Data;
@@ -24,9 +26,12 @@ export interface State {
 }
 
 export const state: Context<State> = createContext<State>({
-    data: new Data(false),
+    data: new Data([
+        new SourceOoeGv(),
+        // new SourceOoeGvMock(),
+    ]),
     stationId: undefined,
-    stationName: "Strobl",
+    stationName: "Wolfgangsee (Abersee), Strobl",
     backgroundColor: "darkslateblue",
     foregroundColor: "white",
 });

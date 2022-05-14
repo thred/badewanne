@@ -12,6 +12,8 @@ You should have received a copy of the GNU General Public License along with thi
 Copyright 2022, Manfred Hantschel
 */
 
+import { Utils } from "./Utils";
+
 export class Listeners<AnyParams extends any[] = []> {
     private readonly listeners: ((...args: AnyParams) => void)[] = [];
 
@@ -20,7 +22,7 @@ export class Listeners<AnyParams extends any[] = []> {
     }
 
     bind(listener: (...args: AnyParams) => void): void {
-        console.log(`${new Date()} Binding listener ...`);
+        Utils.debug(`Binding listener ...`);
 
         this.listeners.push(listener);
     }
@@ -29,7 +31,7 @@ export class Listeners<AnyParams extends any[] = []> {
         const index: number = this.listeners.indexOf(listener);
 
         if (index >= 0) {
-            console.log(`${new Date()} Unbinding listener ...`);
+            Utils.debug(`Unbinding listener ...`);
 
             this.listeners.splice(index, 1);
         }
@@ -42,7 +44,7 @@ export class Listeners<AnyParams extends any[] = []> {
     }
 
     fire(...args: AnyParams): void {
-        console.log(`${new Date()} Notifying ${this.listeners.length} listeners ...`);
+        Utils.debug(`Notifying ${this.listeners.length} listeners ...`);
 
         for (const listener of this.listeners) {
             listener(...args);

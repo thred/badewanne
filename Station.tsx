@@ -16,7 +16,7 @@ import { useContext, useState } from "react";
 import { useEffect } from "react";
 import { FC } from "react";
 import { StyleSheet, View, Text, Button, TouchableOpacity, Linking } from "react-native";
-import { Data, SampleData, StationData } from "./Data";
+import { SourceData, SampleData, StationData } from "./Data";
 import { state, State } from "./State";
 import { Thermometer } from "./Thermometer";
 
@@ -27,7 +27,6 @@ interface Props {
 
 const foregroundColor: string = "white";
 const backgroundColor: string = "darkslateblue";
-const sourceUrl: string = "https://www.land-oberoesterreich.gv.at/142236.htm";
 
 export const Station: FC<Props> = ({ station, error }) => {
     const context = useContext<State>(state);
@@ -35,15 +34,20 @@ export const Station: FC<Props> = ({ station, error }) => {
     const [modified, setModified] = useState<string>();
 
     const refresh = () => {
-        context.data.refresh();
+        // TODO refresh selectively
+        context.data.refreshAll(true);
     };
 
     const openSourceUrl = () => {
-        Linking.canOpenURL(sourceUrl).then((supported) => {
-            if (supported) {
-                Linking.openURL(sourceUrl);
-            }
-        });
+        const sourceUrl: string | undefined = station?.source.link;
+
+        if (sourceUrl) {
+            Linking.canOpenURL(sourceUrl).then((supported) => {
+                if (supported) {
+                    Linking.openURL(sourceUrl);
+                }
+            });
+        }
     };
 
     useEffect(() => {
@@ -59,11 +63,11 @@ export const Station: FC<Props> = ({ station, error }) => {
             const minute: string = formatNumber(sample.date.getMinutes());
 
             if (daysAgo === 0) {
-                setModified(`${hour}:${minute} Uhr`);
+                setModified(`um ${hour}:${minute} Uhr`);
             } else if (daysAgo === 1) {
-                setModified(`Gestern, ${hour}:${minute} Uhr`);
+                setModified(`Gestern, um ${hour}:${minute} Uhr`);
             } else {
-                setModified(`${hour}:${minute} Uhr, vor ${daysAgo} Tagen`);
+                setModified(`vor ${daysAgo} Tagen, um ${hour}:${minute} Uhr`);
             }
         } else {
             setModified(undefined);
@@ -82,13 +86,9 @@ export const Station: FC<Props> = ({ station, error }) => {
                 </TouchableOpacity>
 
                 <View style={styles.location}>
-                    {station && (
-                        <Text style={styles.text}>
-                            {station?.name}, {station?.water}
-                        </Text>
-                    )}
+                    {station && <Text style={styles.text}>{station?.name}</Text>}
 
-                    {modified && <Text style={[styles.text, styles.transparent]}>{modified}</Text>}
+                    {modified && <Text style={[styles.text]}>{modified}</Text>}
 
                     {error && <Text style={styles.text}>{error}</Text>}
                 </View>
@@ -96,9 +96,7 @@ export const Station: FC<Props> = ({ station, error }) => {
 
             <View style={styles.footer}>
                 <TouchableOpacity onPress={openSourceUrl}>
-                    <Text style={[styles.text, styles.transparent]}>
-                        Datenquelle: Land Oberösterreich - data.ooe.gv.at
-                    </Text>
+                    <Text style={[styles.text, styles.transparent]}>{station?.source.disclaimer}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -124,6 +122,7 @@ const styles = StyleSheet.create({
     },
 
     footer: {
+        alignItems: "center",
         justifyContent: "center",
     },
 

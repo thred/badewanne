@@ -23,40 +23,37 @@ const App: FC<Props> = ({}) => {
     const context = useContext<State>(state);
     const [station, setStation] = useState<StationData>();
     const [error, setError] = useState<string>();
+    const [, updateState] = useState<{}>();
 
     const refresh = () => {
-        if (context.data.error) {
-            setStation(undefined);
-            setError(context.data.error);
-            return;
-        }
-
-        let currentStation: StationData | undefined = context.data.findById(context.stationId);
+        let currentStation: StationData | undefined = context.data.findStationById(context.stationId);
 
         if (!currentStation) {
-            currentStation = context.data.findByName(context.stationName);
+            currentStation = context.data.findStationByName(context.stationName);
         }
 
         if (!currentStation) {
             setStation(undefined);
-            setError(`Daten von Station ${context.stationName} fehlen.`);
+            setError(`Daten von Station "${context.stationName}" fehlen.\n${context.data.error}`);
             return;
         }
 
         context.stationId = currentStation.id;
         context.stationName = currentStation.name;
 
-        console.log(`${new Date()} Using station ${context.stationId} ...`);
-
-        setError(undefined);
+        setError(currentStation.source.error);
         setStation(currentStation);
+        updateState({});
     };
 
     useEffect(() => {
         context.data.listeners.bind(() => refresh());
-        context.data.schedule();
+        context.data.refreshAll(true);
 
-        return () => context.data.listeners.clear();
+        return () => {
+            context.data.listeners.clear();
+            context.data.alive = false;
+        };
     }, []);
 
     return (

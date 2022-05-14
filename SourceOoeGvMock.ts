@@ -1,24 +1,45 @@
-/*
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public 
-License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later 
-version.
+import { Data, SourceData, StationData } from "./Data";
+import { Source } from "./Source";
+import { SourceOoeGv } from "./SourceOoeGv";
+import { Utils } from "./Utils";
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+export class SourceOoeGvMock extends SourceOoeGv {
+    get name(): string {
+        return "Hydrographischer Dienst Oberösterreich (Mock)";
+    }
+    get disclaimer(): string {
+        return "Datenquelle: Mock of data.ooe.gv.at";
+    }
+    get link(): string {
+        return "https://www.land-oberoesterreich.gv.at/142236.htm";
+    }
 
-You should have received a copy of the GNU General Public License along with this program. If not, see 
-<https://www.gnu.org/licenses/>.
+    get interval(): number {
+        return 1000 * 10;
+    }
 
-Copyright 2022, Manfred Hantschel
-*/
-
-export class MockedData {
-    static promise(): Promise<string> {
+    protected async fetchData(): Promise<string> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve(binary);
             }, 1000);
         });
+    }
+
+    protected parseStation(stationBinary: string): StationData | undefined {
+        const station: StationData | undefined = super.parseStation(stationBinary);
+
+        if (!station) {
+            return station;
+        }
+
+        if (station.mostRecentSample) {
+            station.mostRecentSample.temperature = 8 + Math.random() * 20;
+
+            Utils.debug(`Override ${station.name}: ${station.mostRecentSample.temperature.toFixed(1)}`);
+        }
+
+        return station;
     }
 }
 

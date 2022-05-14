@@ -12,10 +12,9 @@ You should have received a copy of the GNU General Public License along with thi
 Copyright 2022, Manfred Hantschel
 */
 
-import { MockedData } from "./MockedData";
 import { Listeners } from "./Listeners";
-
-const url: string = "https://data.ooe.gv.at/files/hydro/HDOOE_Export_WT.zrxp";
+import { Source } from "./Source";
+import { Utils } from "./Utils";
 
 export type SampleData = {
     date: Date;
@@ -23,175 +22,155 @@ export type SampleData = {
 };
 
 export class StationData {
-    static parse(stationBinary: string): StationData | undefined {
-        const columns: string[] = stationBinary.split("|");
-
-        const nameColumn: string | undefined = columns.find((column) => column.startsWith("SNAME"));
-
-        if (!nameColumn) {
-            console.log(`SNAME is missing in: ${stationBinary.substring(0, 512)} ...`);
-            return undefined;
-        }
-
-        let waterColumn: string | undefined = columns.find((column) => column.startsWith("SWATER"));
-
-        if (!waterColumn) {
-            console.log(`SWATER is missing in: ${stationBinary.substring(0, 512)} ...`);
-
-            waterColumn = "SWATER";
-        }
-
-        const name: string = nameColumn.substring("SNAME".length);
-        const water: string = waterColumn.substring("SWATER".length);
-
-        const station: StationData = new StationData(`${water}_${name}`.toLowerCase(), name, water);
-
-        const temperatureColumn: string | undefined = columns.find((column) => column.match(/\d{14}\s\d/)?.length);
-
-        if (!temperatureColumn) {
-            console.log(`Temperatures are missing in: ${stationBinary.substring(0, 512)} ...`);
-            return station;
-        }
-
-        const lines: string[] = temperatureColumn
-            .split(/\n/)
-            .map((s) => s.trim())
-            .filter((s) => s.length);
-
-        for (const line of lines) {
-            const samples: string[] = line.split(" ");
-
-            if (samples.length !== 2 || samples[0].length !== 14) {
-                console.log(`Invalid line: ${line}`);
-                continue;
-            }
-
-            const date: Date = new Date();
-
-            date.setUTCFullYear(parseInt(samples[0].substring(0, 4)));
-            date.setUTCMonth(parseInt(samples[0].substring(4, 6)) - 1);
-            date.setUTCDate(parseInt(samples[0].substring(6, 8)));
-            date.setUTCHours(parseInt(samples[0].substring(8, 10)));
-            date.setUTCMinutes(parseInt(samples[0].substring(10, 12)));
-            date.setUTCSeconds(parseInt(samples[0].substring(12, 14)));
-
-            const temperature: number = parseFloat(samples[1]);
-
-            station.samples.push({ date, temperature });
-        }
-
-        station.samples.sort((a, b) => b.date.valueOf() - a.date.valueOf());
-
-        return station;
+    get id(): string {
+        return `${this.name};${this.source.name}`;
     }
 
-    private samples: SampleData[] = [];
+    private _samples: SampleData[] = [];
+
+    get samples(): SampleData[] {
+        this.ensureNotDirty();
+
+        return this._samples;
+    }
 
     get mostRecentSample(): SampleData | undefined {
-        return this.samples[0];
+        this.ensureNotDirty();
+
+        return this._samples[0];
     }
 
-    constructor(readonly id: string, readonly name: string, readonly water: string) {}
+    dirty: boolean = true;
+
+    constructor(readonly name: string, readonly source: Source) {}
+
+    addSample(...samples: SampleData[]): this {
+        for (const sample of samples) {
+            sample.date.setUTCMilliseconds(0);
+
+            const existingSample: SampleData | undefined = this.findSampleByDate(sample.date);
+
+            if (existingSample) {
+                existingSample.date = sample.date;
+                existingSample.temperature = sample.temperature;
+            } else {
+                this._samples.push(sample);
+                this.dirty = true;
+            }
+        }
+
+        return this;
+    }
+
+    findSampleByDate(date: Date): SampleData | undefined {
+        return this._samples.find((sample) => sample.date.valueOf() == date.valueOf());
+    }
+
+    private ensureNotDirty(): void {
+        if (this.dirty) {
+            this._samples.sort((a, b) => b.date.valueOf() - a.date.valueOf());
+        }
+    }
 }
 
-export class Data {
-    readonly listeners: Listeners<[]> = new Listeners();
+export class SourceData {
     readonly stations: StationData[] = [];
 
-    refreshing: boolean = false;
-    scheduled: boolean = false;
+    addStation(...stations: StationData[]): this {
+        for (const station of stations) {
+            const existingStation: StationData | undefined = this.findStationById(station.id);
 
-    constructor(readonly liveData: boolean = true) {}
-
-    get ready(): boolean {
-        return !this.error && !!this.stations.length;
-    }
-
-    error: string | undefined = undefined;
-
-    schedule(): void {
-        this.refresh().then(() => {
-            if (this.scheduled) {
-                return;
+            if (existingStation) {
+                existingStation.addSample(...station.samples);
+            } else {
+                this.stations.push(station);
             }
+        }
 
-            this.scheduled = true;
-
-            setTimeout(
-                () => {
-                    this.scheduled = false;
-                    this.schedule();
-                },
-                this.liveData ? 1000 * 60 * 5 : 1000 * 10
-            );
-        });
+        return this;
     }
 
-    async refresh(): Promise<void> {
-        if (this.refreshing) {
+    findStationById(id?: string): StationData | undefined {
+        return this.stations.find((station) => station.id === id);
+    }
+
+    findStationByName(name?: string): StationData | undefined {
+        return this.stations.find((station) => station.name === name);
+    }
+}
+
+export class Data extends SourceData {
+    constructor(readonly sources: Source[]) {
+        super();
+    }
+
+    readonly listeners: Listeners<[]> = new Listeners();
+
+    refreshing: boolean = false;
+    alive: boolean = true;
+    timeoutId: number = 0;
+
+    get error(): string {
+        return this.sources
+            .filter((source) => source.error)
+            .map((source) => source.error)
+            .join("\n");
+    }
+
+    async refreshAll(force: boolean = false): Promise<void> {
+        const promises: Promise<number>[] = [];
+
+        if (!this.alive || this.refreshing) {
             return;
         }
 
         this.refreshing = true;
 
-        console.log(`${new Date()} Refreshing ...`);
+        let nextUpdateIn: number = 1000 * 60;
 
         try {
-            let binary: string;
+            for (const source of this.sources) {
+                Utils.debug(`Refreshing source "${source.name}" ...`);
 
-            if (this.liveData) {
-                const response: Response = await fetch(url);
+                source.error = undefined;
 
-                binary = await response.text();
-            } else {
-                binary = await MockedData.promise();
+                promises.push(
+                    source.refresh(this, force).then(
+                        (nextUpdate) => nextUpdate,
+                        (error) => {
+                            Utils.warn(`Refreshing source "${source.name}" failed: ${error}`);
+
+                            source.error = `${error}`;
+
+                            return Date.now() + 1000 * 60;
+                        }
+                    )
+                );
             }
 
-            this.error = undefined;
-            this.parse(binary);
+            const nextUpdate: number = (await Promise.all(promises)).reduce(
+                (a, b) => Math.min(a, b),
+                Date.now() + 1000 * 60 * 5
+            );
 
-            if (!this.liveData) {
-                for (const station of this.stations) {
-                    if (station.mostRecentSample) {
-                        station.mostRecentSample.temperature = 8 + Math.random() * 20;
-
-                        console.log(
-                            `${station.name}, ${station.water}: ${station.mostRecentSample.temperature.toFixed(1)}`
-                        );
-                    }
-                }
-            }
+            nextUpdateIn = Math.max(nextUpdate - Date.now(), 1000);
         } catch (error) {
-            console.log(`${new Date()} ${error}`);
-            this.error = `${error}`;
+            Utils.error(`Unexpected error`, error);
         } finally {
             this.refreshing = false;
             this.listeners.fire();
         }
-    }
 
-    parse(binary: string): void {
-        const stationBinaries: string[] = binary
-            .split("#ZRXPVERSION")
-            .map((s) => s.trim())
-            .filter((s) => s.length);
+        Utils.debug(`Next refresh in ${nextUpdateIn / 1000} seconds.`);
 
-        this.stations.length = 0;
+        const currentTimeoutId: number = ++this.timeoutId;
 
-        for (const stationBinary of stationBinaries) {
-            const station: StationData | undefined = StationData.parse(stationBinary);
-
-            if (station) {
-                this.stations.push(station);
+        setTimeout(() => {
+            if (this.timeoutId !== currentTimeoutId) {
+                return;
             }
-        }
-    }
 
-    findById(id?: string): StationData | undefined {
-        return this.stations.find((station) => id === station.id);
-    }
-
-    findByName(name?: string): StationData | undefined {
-        return this.stations.find((station) => name === station.name);
+            this.refreshAll();
+        }, nextUpdateIn);
     }
 }
