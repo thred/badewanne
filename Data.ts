@@ -74,14 +74,14 @@ export class StationData {
                 continue;
             }
 
-            const date: Date = new Date(
-                parseInt(samples[0].substring(0, 4)),
-                parseInt(samples[0].substring(4, 6)) - 1,
-                parseInt(samples[0].substring(6, 8)),
-                parseInt(samples[0].substring(8, 10)),
-                parseInt(samples[0].substring(10, 12)),
-                parseInt(samples[0].substring(12, 14))
-            );
+            const date: Date = new Date();
+
+            date.setUTCFullYear(parseInt(samples[0].substring(0, 4)));
+            date.setUTCMonth(parseInt(samples[0].substring(4, 6)) - 1);
+            date.setUTCDate(parseInt(samples[0].substring(6, 8)));
+            date.setUTCHours(parseInt(samples[0].substring(8, 10)));
+            date.setUTCMinutes(parseInt(samples[0].substring(10, 12)));
+            date.setUTCSeconds(parseInt(samples[0].substring(12, 14)));
 
             const temperature: number = parseFloat(samples[1]);
 

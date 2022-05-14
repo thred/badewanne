@@ -24,7 +24,7 @@ export interface State {
 }
 
 export const state: Context<State> = createContext<State>({
-    data: new Data(true),
+    data: new Data(false),
     stationId: undefined,
     stationName: "Strobl",
     backgroundColor: "darkslateblue",
