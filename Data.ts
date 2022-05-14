@@ -26,13 +26,6 @@ export class StationData {
     static parse(stationBinary: string): StationData | undefined {
         const columns: string[] = stationBinary.split("|");
 
-        const idColumn: string | undefined = columns.find((column) => column.startsWith("SOURCEID"));
-
-        if (!idColumn) {
-            console.log(`SOURCEID is missing in: ${stationBinary.substring(0, 512)} ...`);
-            return undefined;
-        }
-
         const nameColumn: string | undefined = columns.find((column) => column.startsWith("SNAME"));
 
         if (!nameColumn) {
@@ -48,11 +41,10 @@ export class StationData {
             waterColumn = "SWATER";
         }
 
-        const station: StationData = new StationData(
-            idColumn.substring("SOURCEID".length),
-            nameColumn.substring("SNAME".length),
-            waterColumn.substring("SWATER".length)
-        );
+        const name: string = nameColumn.substring("SNAME".length);
+        const water: string = waterColumn.substring("SWATER".length);
+
+        const station: StationData = new StationData(`${water}_${name}`.toLowerCase(), name, water);
 
         const temperatureColumn: string | undefined = columns.find((column) => column.match(/\d{14}\s\d/)?.length);
 

@@ -11,9 +11,9 @@ You should have received a copy of the GNU General Public License along with thi
 */
 
 import { StatusBar } from "expo-status-bar";
-import React, { FC, useContext, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Data, StationData } from "./Data";
+import { FC, useContext, useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { StationData } from "./Data";
 import { state, State } from "./State";
 import { Station } from "./Station";
 
