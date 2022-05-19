@@ -12,34 +12,20 @@ You should have received a copy of the GNU General Public License along with thi
 Copyright 2022, Manfred Hantschel
 */
 
-import { useContext, useState } from "react";
-import { useEffect } from "react";
 import { FC } from "react";
-import { StyleSheet, View, Text, Button, TouchableOpacity, Linking } from "react-native";
-import { SourceData, SampleData, StationData } from "./Data";
-import { state, State } from "./State";
+import { StyleSheet, View, Text, TouchableOpacity, Linking } from "react-native";
+import { StationData } from "./StationData";
 import { Thermometer } from "./Thermometer";
+import { Utils } from "./Utils";
 
-interface Props {
-    station?: StationData;
-    error?: string;
-}
-
-const foregroundColor: string = "white";
-const backgroundColor: string = "darkslateblue";
-
-export const Station: FC<Props> = ({ station, error }) => {
-    const context = useContext<State>(state);
-    const [sample, setSample] = useState<SampleData>();
-    const [modified, setModified] = useState<string>();
-
-    const refresh = () => {
-        // TODO refresh selectively
-        context.data.refreshAll(true);
-    };
-
+export const Station: FC<{
+    station: StationData;
+    action: () => void;
+    color: string;
+    backgroundColor: string;
+}> = ({ station, action, color = "white", backgroundColor = "darkslateblue" }) => {
     const openSourceUrl = () => {
-        const sourceUrl: string | undefined = station?.source.link;
+        const sourceUrl: string | undefined = station.source.link;
 
         if (sourceUrl) {
             Linking.canOpenURL(sourceUrl).then((supported) => {
@@ -50,53 +36,39 @@ export const Station: FC<Props> = ({ station, error }) => {
         }
     };
 
-    useEffect(() => {
-        const sample: SampleData | undefined = station?.mostRecentSample;
-
-        setSample(sample);
-
-        const day: string | undefined = undefined;
-
-        if (sample) {
-            const daysAgo: number = totalDay(new Date()) - totalDay(sample.date);
-            const hour: string = formatNumber(sample.date.getHours());
-            const minute: string = formatNumber(sample.date.getMinutes());
-
-            if (daysAgo === 0) {
-                setModified(`um ${hour}:${minute} Uhr`);
-            } else if (daysAgo === 1) {
-                setModified(`Gestern, um ${hour}:${minute} Uhr`);
-            } else {
-                setModified(`vor ${daysAgo} Tagen, um ${hour}:${minute} Uhr`);
-            }
-        } else {
-            setModified(undefined);
-        }
-    }, [station]);
-
     return (
-        <View style={styles.station}>
+        <View style={[styles.station, { backgroundColor }]}>
             <View style={styles.center}>
-                <TouchableOpacity onPress={refresh}>
+                <TouchableOpacity onPress={action}>
                     <Thermometer
-                        temperature={sample?.temperature ?? 0}
-                        color={foregroundColor}
+                        temperature={station.mostRecentSample?.temperature ?? 0}
+                        color={color}
                         textColor={backgroundColor}
                     ></Thermometer>
                 </TouchableOpacity>
 
-                <View style={styles.location}>
-                    {station && <Text style={styles.text}>{station?.name}</Text>}
+                <TouchableOpacity onPress={action}>
+                    <View style={styles.location}>
+                        {station && (
+                            <Text style={[styles.text, { color }]}>
+                                {station.name}, {station.site}
+                            </Text>
+                        )}
 
-                    {modified && <Text style={[styles.text]}>{modified}</Text>}
+                        {station.mostRecentSample?.date && (
+                            <Text style={[styles.text, { color }]}>
+                                {Utils.passedSince(station.mostRecentSample?.date)}
+                            </Text>
+                        )}
 
-                    {error && <Text style={styles.text}>{error}</Text>}
-                </View>
+                        {station.error && <Text style={styles.text}>{station.error}</Text>}
+                    </View>
+                </TouchableOpacity>
             </View>
 
             <View style={styles.footer}>
                 <TouchableOpacity onPress={openSourceUrl}>
-                    <Text style={[styles.text, styles.transparent]}>{station?.source.disclaimer}</Text>
+                    <Text style={[styles.text, { color }, styles.transparent]}>{station.source.disclaimer}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -105,8 +77,9 @@ export const Station: FC<Props> = ({ station, error }) => {
 
 const styles = StyleSheet.create({
     station: {
-        color: foregroundColor,
-        backgroundColor: backgroundColor,
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
     },
 
     center: {
@@ -127,7 +100,6 @@ const styles = StyleSheet.create({
     },
 
     text: {
-        color: foregroundColor,
         paddingTop: 2,
         paddingBottom: 2,
     },
@@ -140,17 +112,3 @@ const styles = StyleSheet.create({
         flex: 1,
     },
 });
-
-function formatNumber(n: number, length: number = 2): string {
-    let s: string = n.toFixed(0);
-
-    while (s.length < length) {
-        s = "0" + s;
-    }
-
-    return s;
-}
-
-function totalDay(date: Date): number {
-    return Math.floor((date.valueOf() - new Date(2020, 0, 0).valueOf()) / 1000 / 60 / 60 / 24);
-}

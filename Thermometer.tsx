@@ -16,18 +16,11 @@ import { FC, SetStateAction, useEffect, useRef, useState } from "react";
 import { Animated } from "react-native";
 import Svg, { Defs, ClipPath, Rect, Path, Text, G, TSpan } from "react-native-svg";
 
-interface Props {
+export const Thermometer: FC<{
     temperature: number;
     color?: string;
     textColor?: string;
-}
-
-interface State {
-    targetTemperature: number;
-    currentTemperature: number;
-}
-
-export const Thermometer: FC<Props> = ({ temperature, color = "black", textColor = "white" }) => {
+}> = ({ temperature, color = "black", textColor = "white" }) => {
     const [targetTemperature, setTargetTemperature] = useState(0);
     const [currentTemperature, setCurrentTemperature] = useState(0);
     const temperatureAnim = useRef(new Animated.Value(0)).current;
