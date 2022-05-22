@@ -1,14 +1,5 @@
 import React, { FC } from "react";
-import {
-    TouchableOpacity,
-    StyleSheet,
-    View,
-    Text,
-    FlatList,
-    SafeAreaView,
-    StatusBar,
-    ListRenderItem,
-} from "react-native";
+import { TouchableOpacity, StyleSheet, FlatList, SafeAreaView, StatusBar, ListRenderItem } from "react-native";
 import { Reference } from "./Reference";
 import { ReferenceData } from "./ReferenceData";
 

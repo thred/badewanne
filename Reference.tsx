@@ -1,6 +1,7 @@
 import { FC } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { ReferenceData } from "./ReferenceData";
+import { Style } from "./Style";
 
 export const Reference: FC<{
     reference: ReferenceData;
@@ -32,16 +33,16 @@ const styles = StyleSheet.create({
     },
 
     name: {
-        color: "white",
+        color: Style.color,
         fontSize: 24,
     },
 
     site: {
-        color: "white",
+        color: Style.color,
     },
 
     temperature: {
-        color: "white",
+        color: Style.color,
         opacity: 0.5,
     },
 });

@@ -15,15 +15,14 @@ Copyright 2022, Manfred Hantschel
 import { FC } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Linking } from "react-native";
 import { StationData } from "./StationData";
+import { Style } from "./Style";
 import { Thermometer } from "./Thermometer";
 import { Utils } from "./Utils";
 
 export const Station: FC<{
     station: StationData;
     action: () => void;
-    color: string;
-    backgroundColor: string;
-}> = ({ station, action, color = "white", backgroundColor = "darkslateblue" }) => {
+}> = ({ station, action }) => {
     const openSourceUrl = () => {
         const sourceUrl: string | undefined = station.source.link;
 
@@ -37,28 +36,26 @@ export const Station: FC<{
     };
 
     return (
-        <View style={[styles.station, { backgroundColor }]}>
+        <View style={[styles.station, { backgroundColor: Style.backgroundColor }]}>
             <View style={styles.center}>
                 <TouchableOpacity onPress={action}>
                     <Thermometer
                         temperature={station.mostRecentSample?.temperature ?? 0}
-                        color={color}
-                        textColor={backgroundColor}
+                        color={Style.color}
+                        textColor={Style.backgroundColor}
                     ></Thermometer>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={action}>
                     <View style={styles.location}>
                         {station && (
-                            <Text style={[styles.text, { color }]}>
+                            <Text style={styles.text}>
                                 {station.name}, {station.site}
                             </Text>
                         )}
 
                         {station.mostRecentSample?.date && (
-                            <Text style={[styles.text, { color }]}>
-                                {Utils.passedSince(station.mostRecentSample?.date)}
-                            </Text>
+                            <Text style={styles.text}>{Utils.passedSince(station.mostRecentSample?.date)}</Text>
                         )}
 
                         {station.error && <Text style={styles.text}>{station.error}</Text>}
@@ -68,7 +65,7 @@ export const Station: FC<{
 
             <View style={styles.footer}>
                 <TouchableOpacity onPress={openSourceUrl}>
-                    <Text style={[styles.text, { color }, styles.transparent]}>{station.source.disclaimer}</Text>
+                    <Text style={[styles.text, styles.transparent]}>{station.source.disclaimer}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -78,6 +75,7 @@ export const Station: FC<{
 const styles = StyleSheet.create({
     station: {
         flex: 1,
+        backgroundColor: Style.backgroundColor,
         alignItems: "center",
         justifyContent: "center",
     },
@@ -100,6 +98,7 @@ const styles = StyleSheet.create({
     },
 
     text: {
+        color: Style.color,
         paddingTop: 2,
         paddingBottom: 2,
     },

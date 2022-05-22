@@ -22,15 +22,14 @@ import { Source } from "./Source";
 import { Utils } from "./Utils";
 import { SourceOoeGv } from "./SourceOoeGv";
 import { Page } from "./Page";
+import { Style } from "./Style";
 
 const App: FC<{}> = ({}) => {
-    const [sources] = useState<Source[]>([new SourceOoeGv()]);
+    const [sources] = useState<Source[]>([new SourceOoeGvMock()]);
     const [reference, setReference] = useState<ReferenceData | undefined>();
     const [references, setReferences] = useState<ReferenceData[]>([]);
     const [station, setStation] = useState<StationData | undefined>();
     const [timerId, setTimerId] = useState<any>();
-    const [color, setColor] = useState<string>("white");
-    const [backgroundColor, setBackgroundColor] = useState<string>("darkslateblue");
     const [page, setPage] = useState<Page>("station");
 
     useEffect(() => {
@@ -110,25 +109,20 @@ const App: FC<{}> = ({}) => {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor }]}>
+        <View style={styles.container}>
             {page === "overview" && (
-                <View style={[styles.overview]}>
+                <View style={styles.overview}>
                     {<Overview references={references} select={selectStation}></Overview>}
                 </View>
             )}
 
             {page === "station" && station && (
                 <View style={styles.station}>
-                    <Station
-                        station={station}
-                        action={() => setPage("overview")}
-                        color={color}
-                        backgroundColor={backgroundColor}
-                    ></Station>
+                    <Station station={station} action={() => setPage("overview")}></Station>
                 </View>
             )}
 
-            <StatusBar style="auto" backgroundColor={backgroundColor} />
+            <StatusBar style="auto" backgroundColor={Style.backgroundColor} />
         </View>
     );
 };
@@ -138,6 +132,7 @@ export default App;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: Style.backgroundColor,
         alignItems: "center",
         justifyContent: "center",
     },
