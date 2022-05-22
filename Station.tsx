@@ -13,7 +13,7 @@ Copyright 2022, Manfred Hantschel
 */
 
 import { FC } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Linking } from "react-native";
+import { StyleSheet, View, Image, Text, TouchableOpacity, Linking, StatusBar } from "react-native";
 import { StationData } from "./StationData";
 import { Style } from "./Style";
 import { Thermometer } from "./Thermometer";
@@ -36,7 +36,7 @@ export const Station: FC<{
     };
 
     return (
-        <View style={[styles.station, { backgroundColor: Style.backgroundColor }]}>
+        <View style={styles.component}>
             <View style={styles.center}>
                 <TouchableOpacity onPress={action}>
                     <Thermometer
@@ -73,15 +73,14 @@ export const Station: FC<{
 };
 
 const styles = StyleSheet.create({
-    station: {
+    component: {
         flex: 1,
-        backgroundColor: Style.backgroundColor,
         alignItems: "center",
         justifyContent: "center",
     },
 
     center: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: "center",
         justifyContent: "center",
     },

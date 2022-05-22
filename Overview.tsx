@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
     component: {
         flex: 1,
         width: "100%",
-        marginTop: StatusBar.currentHeight ?? 0,
     },
 
     text: {},

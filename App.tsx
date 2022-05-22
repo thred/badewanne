@@ -13,7 +13,7 @@ You should have received a copy of the GNU General Public License along with thi
 import { StatusBar } from "expo-status-bar";
 import { FC, useEffect, useRef, useState } from "react";
 import { Overview } from "./Overview";
-import { AppState, BackHandler, StyleSheet, View } from "react-native";
+import { AppState, BackHandler, Image, Text, StyleSheet, View, TouchableOpacity } from "react-native";
 import { Station } from "./Station";
 import { StationData } from "./StationData";
 import { ReferenceData } from "./ReferenceData";
@@ -40,8 +40,8 @@ const App: FC<{}> = ({}) => {
 
     const [page, _setPage] = useState<Page>("station");
     const pageRef = useRef<Page>(page);
-    // Hey React, come on. Do I really have to create a Ref, implement it on my own, just to access the current value?
-    // And if I don't do this, I don't get an error - the thing just does not work?
+    // Hey React, come on. Do I really have to create a Ref, implement it on my own, just to access the current value
+    // within an event handler? And if I don't do this, I don't get an error - the thing just does not work?
     // I'm really amazed how React can be that successful.
     const setPage: (page: Page) => unknown = (page) => {
         pageRef.current = page;
@@ -123,9 +123,6 @@ const App: FC<{}> = ({}) => {
             setTimerId(
                 setTimeout(() => {
                     setRefreshedAtTime(Date.now());
-                    // setReference(
-                    //     new ReferenceData(station.name, station.site, station.sourceName, station.mostRecentTemperature)
-                    // );
                 }, delay)
             );
         }
@@ -183,19 +180,41 @@ const App: FC<{}> = ({}) => {
 
     return (
         <View style={styles.container}>
-            {page === "overview" && (
-                <View style={styles.overview}>
-                    {<Overview references={references} select={selectStation}></Overview>}
-                </View>
-            )}
+            <View style={styles.header}>
+                {page === "station" && (
+                    <TouchableOpacity onPress={() => setPage("overview")}>
+                        <Image source={require("./assets/menu-icon.png")} style={styles.icon}></Image>
+                    </TouchableOpacity>
+                )}
 
-            {page === "station" && station && (
-                <View style={styles.station}>
+                {page === "overview" && (
+                    <TouchableOpacity onPress={() => setPage("station")}>
+                        <Image source={require("./assets/back-icon.png")} style={styles.icon}></Image>
+                    </TouchableOpacity>
+                )}
+
+                <Text style={{ flexGrow: 1 }}></Text>
+
+                {page === "station" && (
+                    <TouchableOpacity onPress={() => setRefreshedAtTime(Date.now())}>
+                        <Image source={require("./assets/refresh-icon.png")} style={styles.icon}></Image>
+                    </TouchableOpacity>
+                )}
+
+                {/* <Image source={require("./assets/info-icon.png")} style={styles.icon}></Image>
+
+                <Image source={require("./assets/exit-icon.png")} style={styles.icon}></Image> */}
+            </View>
+
+            <View style={styles.content}>
+                {page === "overview" && <Overview references={references} select={selectStation}></Overview>}
+
+                {page === "station" && station && (
                     <Station station={station} action={() => setPage("overview")}></Station>
-                </View>
-            )}
+                )}
+            </View>
 
-            <StatusBar style="auto" backgroundColor={Style.backgroundColor} />
+            <StatusBar translucent={false} style="auto" backgroundColor={Style.backgroundColor} />
         </View>
     );
 };
@@ -210,17 +229,25 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
 
-    overview: {
-        position: "absolute",
-        height: "100%",
+    header: {
+        flexGrow: 0,
+        flexShrink: 0,
+        flexDirection: "row",
+        justifyContent: "space-between",
         width: "100%",
-        alignItems: "flex-start",
-        justifyContent: "flex-start",
     },
 
-    station: {
-        flex: 1,
+    icon: {
+        width: 32,
+        height: 32,
+        margin: 2,
+    },
+
+    content: {
+        flexGrow: 1,
+        flexShrink: 0,
         alignItems: "center",
         justifyContent: "center",
+        width: "100%",
     },
 });
