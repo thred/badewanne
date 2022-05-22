@@ -23,6 +23,9 @@ import { Utils } from "./Utils";
 import { SourceOoeGv } from "./SourceOoeGv";
 import { Page } from "./Page";
 import { Style } from "./Style";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const storageKey: string = "@badewanne:reference";
 
 const App: FC<{}> = ({}) => {
     const [sources] = useState<Source[]>([new SourceOoeGvMock()]);
@@ -49,7 +52,24 @@ const App: FC<{}> = ({}) => {
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
     useEffect(() => {
-        setReference(new ReferenceData(undefined, "Strobl", undefined, undefined));
+        AsyncStorage.getItem(storageKey).then(
+            (value) => {
+                console.log(value);
+                if (value) {
+                    try {
+                        setReference(JSON.parse(value));
+                    } catch (error) {
+                        Utils.warn("Failed to set state", error);
+                    }
+                } else {
+                    setReference(new ReferenceData(undefined, "Strobl", undefined, undefined));
+                }
+            },
+            (error) => {
+                Utils.warn("Failed to read state", error);
+                setReference(new ReferenceData(undefined, "Strobl", undefined, undefined));
+            }
+        );
 
         Promise.all(sources.map((source) => source.getReferences()))
             .then((multipleReferences) => multipleReferences.flatMap((r) => r))
@@ -132,6 +152,12 @@ const App: FC<{}> = ({}) => {
 
                     setStation(stationDatas[0]);
                 });
+            }
+
+            try {
+                AsyncStorage.setItem(storageKey, JSON.stringify(reference));
+            } catch (error) {
+                Utils.warn("Failed to persist state", error);
             }
         }
     }, [reference, refreshedAtTime]);
