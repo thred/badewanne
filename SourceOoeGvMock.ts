@@ -34,13 +34,13 @@ export class SourceOoeGvMock extends SourceOoeGv {
             return station;
         }
 
-        // if (station.mostRecentSample) {
-        //     station.mostRecentSample.temperature = 8 + Math.random() * 20;
+        if (station.mostRecentSample) {
+            station.mostRecentSample.temperature = 8 + Math.random() * 20;
 
-        //     // Utils.debug(
-        //     //     `Override "${station.water}, ${station.site}: ${station.mostRecentSample.temperature.toFixed(1)}`
-        //     // );
-        // }
+            // Utils.debug(
+            //     `Override "${station.water}, ${station.site}: ${station.mostRecentSample.temperature.toFixed(1)}`
+            // );
+        }
 
         return station;
     }

@@ -11,9 +11,9 @@ You should have received a copy of the GNU General Public License along with thi
 */
 
 import { StatusBar } from "expo-status-bar";
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { Overview } from "./Overview";
-import { StyleSheet, View } from "react-native";
+import { AppState, BackHandler, StyleSheet, View } from "react-native";
 import { Station } from "./Station";
 import { StationData } from "./StationData";
 import { ReferenceData } from "./ReferenceData";
@@ -30,7 +30,23 @@ const App: FC<{}> = ({}) => {
     const [references, setReferences] = useState<ReferenceData[]>([]);
     const [station, setStation] = useState<StationData | undefined>();
     const [timerId, setTimerId] = useState<any>();
-    const [page, setPage] = useState<Page>("station");
+
+    // Hey React, come on. In order to trigger a fresh, do I really have to set a random number?
+    // I'm really amazed how React can be that successful.
+    const [refreshedAtTime, setRefreshedAtTime] = useState<number>(Date.now());
+
+    const [page, _setPage] = useState<Page>("station");
+    const pageRef = useRef<Page>(page);
+    // Hey React, come on. Do I really have to create a Ref, implement it on my own, just to access the current value?
+    // And if I don't do this, I don't get an error - the thing just does not work?
+    // I'm really amazed how React can be that successful.
+    const setPage: (page: Page) => unknown = (page) => {
+        pageRef.current = page;
+        _setPage(page);
+    };
+
+    const appState = useRef(AppState.currentState);
+    const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
     useEffect(() => {
         setReference(new ReferenceData(undefined, "Strobl", undefined, undefined));
@@ -49,6 +65,36 @@ const App: FC<{}> = ({}) => {
     }, []);
 
     useEffect(() => {
+        const backAction = () => {
+            if (pageRef.current === "station") {
+                return false;
+            }
+
+            setPage("station");
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+
+        return () => backHandler.remove();
+    }, []);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener("change", (nextAppState) => {
+            if (appState.current.match(/inactive|background/) && nextAppState === "active") {
+                setRefreshedAtTime(Date.now());
+            }
+
+            appState.current = nextAppState;
+            setAppStateVisible(appState.current);
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
+    useEffect(() => {
         if (station) {
             Utils.debug("Updating station data");
 
@@ -56,9 +102,10 @@ const App: FC<{}> = ({}) => {
 
             setTimerId(
                 setTimeout(() => {
-                    setReference(
-                        new ReferenceData(station.name, station.site, station.sourceName, station.mostRecentTemperature)
-                    );
+                    setRefreshedAtTime(Date.now());
+                    // setReference(
+                    //     new ReferenceData(station.name, station.site, station.sourceName, station.mostRecentTemperature)
+                    // );
                 }, delay)
             );
         }
@@ -87,7 +134,7 @@ const App: FC<{}> = ({}) => {
                 });
             }
         }
-    }, [reference]);
+    }, [reference, refreshedAtTime]);
 
     useEffect(() => {
         return () => clearTimeout(timerId);
